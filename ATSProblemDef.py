@@ -1,4 +1,30 @@
 
+"""
+The MIT License
+
+Copyright (c) 2021 MatNet
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
 import torch
 
 
@@ -14,8 +40,11 @@ def get_random_problems(batch_size, node_cnt, problem_gen_params):
 
     problems = torch.randint(low=int_min, high=int_max, size=(batch_size, node_cnt, node_cnt))
     # shape: (batch, node, node)
+    problems_time = torch.randint(low = 1, high = 1000*1000, size=(batch_size, node_cnt, node_cnt))
     problems[:, torch.arange(node_cnt), torch.arange(node_cnt)] = 0
+    problems_time[:, torch.arange(node_cnt), torch.arange(node_cnt)] = 0
     generate_tw = torch.randint(low= 1, high= 1000*1000, size=(batch_size, 2, node_cnt))
+
     while True:
         old_problems = problems.clone()
 
@@ -27,9 +56,10 @@ def get_random_problems(batch_size, node_cnt, problem_gen_params):
 
     # Scale
     scaled_problems = problems.float() / scaler
-    scaled_problems_time = scaled_problems.clone()
-    start = generate_tw[:, 0, :]
-    end = generate_tw[:, 1, :]
+    scaled_problems_time = problems_time.float() / scaler
+    scaled_generate_tw = generate_tw.float() / scaler
+    start = scaled_generate_tw[:, 0, :]
+    end = scaled_generate_tw[:, 1, :]
     return scaled_problems, scaled_problems_time,start,end
     # shape: (batch, node, node)
 

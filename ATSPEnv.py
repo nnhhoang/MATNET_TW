@@ -142,14 +142,13 @@ class ATSPEnv:
 
         #shape: node
         x = torch.cumsum(selected_time, dim=2)
-        startz = self.selected_node_list.clone().int()
-        endz = self.selected_node_list.clone().int()
-        s_shape = startz.shape
+        startz = torch.zeros(self.selected_node_list.shape, dtype=torch.float64, device=self.selected_node_list.get_device())
+        endz = torch.zeros(self.selected_node_list.shape, dtype=torch.float64, device=self.selected_node_list.get_device())
         for b,batch in enumerate(startz):
             for p, pomo in enumerate(batch):
                 for i, index in enumerate(pomo):
-                    startz[b][p][i] = start[b][startz[b][p][i].item()]
-                    endz[b][p][i] = end[b][endz[b][p][i].item()]
+                    startz[b][p][i] = start[b][self.selected_node_list[b][p][i].item()].float()
+                    endz[b][p][i] = end[b][self.selected_node_list[b][p][i].item()].float()
 
         # startz = startz.cpu().apply_(lambda x:start[batch_index][int(x)]).to("cuda:0")
         # endz = endz.cpu().apply_(lambda x:end[x]).to_device("cuda:0")
@@ -160,7 +159,7 @@ class ATSPEnv:
         # shape: (batch, pomo, node)
         total_distance = selected_cost.sum(2)+time_penalty.sum(2)
         # shape: (batch, pomo)
-
+        # print()
         return total_distance
     
     
