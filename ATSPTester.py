@@ -149,3 +149,65 @@ class ATSPTester:
             aug_score = -max_aug_pomo_reward.float().mean()  # negative sign to make positive value
 
             return no_aug_score.item(), aug_score.item()
+        
+        
+        
+        ############################FOR DEBUG########################################################
+        def _test_one_batch(self, idx_start, idx_end):
+
+        batch_size = idx_end-idx_start
+        problems_batched = self.all_problems[idx_start:idx_end]
+
+        # Augmentation
+        ###############################################
+        if self.tester_params['augmentation_enable']:
+            aug_factor = self.tester_params['aug_factor']
+
+            batch_size = aug_factor*batch_size
+            problems_batched = problems_batched.repeat(aug_factor, 1, 1)
+        else:
+            aug_factor = 1
+
+        # Ready
+        ###############################################
+        self.model.eval()
+        with torch.no_grad():
+            self.env.load_problems_manual(problems_batched)
+            reset_state, _, _ = self.env.reset()
+            self.model.pre_forward(reset_state)
+
+            # POMO Rollout
+            ###############################################
+            state, reward, done = self.env.pre_step()
+            while not done:
+                selected, _ = self.model(state)
+                # shape: (batch, pomo)
+                state, reward, done = self.env.step(selected)
+
+            # Return
+            ###############################################
+            batch_size = batch_size//aug_factor
+            aug_reward = reward.reshape(aug_factor, batch_size, self.env.pomo_size)
+            
+            # shape: (augmentation, batch, pomo)
+
+            max_pomo_reward, _ = aug_reward.max(dim=2)  # get best results from pomo
+            # print("promo")
+            arg_promo = torch.argmax(aug_reward, dim=2)
+            # shape: (augmentation, batch)
+            no_aug_score = -max_pomo_reward[0, :].float().max()  # negative sign to make positive value
+
+            max_aug_pomo_reward, _ = max_pomo_reward.max(dim=0)  # get best results from augmentation
+            arg_aug = torch.argmax(max_pomo_reward, dim=0)
+            # shape: (batch,)
+            aug_score = -max_aug_pomo_reward.float().max()  # negative sign to make positive value
+            # print("batch")
+            arg_batch = torch.argmax(-max_aug_pomo_reward.float())
+            aug = arg_aug[arg_batch]
+            promo = arg_promo[aug][arg_batch]
+            print(self.env.selected_node_list[aug*batch_size+arg_batch][promo])
+            print(reward[aug*batch_size+arg_batch][promo])
+            print(aug_score.item())
+            return no_aug_score.item(), aug_score.item()
+        ###################################################################################
+        
